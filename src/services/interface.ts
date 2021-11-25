@@ -1,5 +1,9 @@
 export interface obj {
-  [name: string]: string | number | boolean;
+  [name: string]:
+    | string
+    | number
+    | boolean
+    | { [name: string]: string | number | boolean };
 }
 export interface User {
   email: string;

@@ -10,7 +10,7 @@ import { generateToken } from "../services/token";
 export const createUser = async (
   req: Request,
   res: Response
-): Promise<unknown> => {
+): Promise<Response | JSON> => {
   const user = req.body;
   const hashedPasedword = await bcrypt.hash(user.password, 10);
   try {
@@ -35,15 +35,12 @@ export const createUser = async (
 export const loginUser = async (
   req: Request,
   res: Response
-): Promise<Response | void | string> => {
+): Promise<Response | JSON> => {
   const savedUser = req.user.rows[0];
+  const { email, id } = savedUser;
   try {
-    const token = generateToken({
-      email: savedUser.email,
-      id: savedUser.id,
-    });
-    const data = { token: token, ...savedUser };
-    const result = { status: "success", data: data };
+    const token = generateToken(email, id);
+    const result = { status: "success", data: { token: token, ...savedUser } };
     return res.status(200).send(result);
   } catch (error) {
     return res.status(500).send(error);

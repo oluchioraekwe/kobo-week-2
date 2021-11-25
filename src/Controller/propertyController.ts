@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import dotenv from "dotenv";
 import client from "../db";
 import { propertyQuery } from "../schema/tables";
 import cloudinary from "../utils/cloudinaryFile";
 import { insertValue } from "../services/querries";
+import { obj } from "../services/interface";
 
 interface Property {
   owner: number;
@@ -24,7 +24,7 @@ interface Property {
 export const createProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | JSON> => {
   const property: Property = req.body;
   const user = req.user;
   await client.query(propertyQuery);
@@ -65,7 +65,7 @@ export const createProperty = async (
 export const updateProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | JSON> => {
   const property: any = req.body;
   const ID = req.params.id;
   const user = req.user;
@@ -105,7 +105,7 @@ export const updateProperty = async (
 export const soldProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | JSON> => {
   const id = req.params.id;
   const user = req.user;
   const owner = user.id;
@@ -130,7 +130,7 @@ export const soldProperty = async (
 export const removeProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | obj> => {
   const id = req.params.id;
   const user = req.user;
   const owner = user.id;
@@ -143,9 +143,9 @@ export const removeProperty = async (
         message: `Property with id ${id} deleted`,
       },
     };
-    res.status(200).send(message);
+    return res.status(200).send(message);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
 
@@ -168,7 +168,7 @@ export const getAllProperty = async (
 export const getParticularProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | JSON> => {
   const type = req.query.type;
   const statement = `SELECT * FROM properties WHERE type = $1`;
   try {
@@ -177,16 +177,16 @@ export const getParticularProperty = async (
       status: "succesful",
       data: particularProperty.rows,
     };
-    res.status(200).send(result);
+    return res.status(200).send(result);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
 
 export const getSpecificProperty = async (
   req: Request,
   res: Response
-): Promise<Response | void> => {
+): Promise<Response | JSON> => {
   const id = req.params.id;
   const statement = `SELECT * FROM properties WHERE id =$1`;
   try {
@@ -195,8 +195,8 @@ export const getSpecificProperty = async (
       status: "succesfull",
       data: specificProperty.rows,
     };
-    res.status(200).send(result);
+    return res.status(200).send(result);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
