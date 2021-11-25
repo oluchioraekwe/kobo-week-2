@@ -34,4 +34,3 @@ export const flagQuery = `
     description varchar  
   );
   `;
-//CREATE TYPE mood AS ENUM ('sold', 'available');

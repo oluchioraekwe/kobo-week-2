@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import client from "../db";
 import { propertyQuery } from "../schema/tables";
 import cloudinary from "../utils/cloudinaryFile";
+import { insertValue } from "../services/querries";
 
 interface Property {
   owner: number;
@@ -20,7 +21,10 @@ interface Property {
  * POST Create a new Property
  */
 
-export const createProperty = async (req: Request, res: Response) => {
+export const createProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const property: Property = req.body;
   const user = req.user;
   await client.query(propertyQuery);
@@ -29,34 +33,39 @@ export const createProperty = async (req: Request, res: Response) => {
       "https://img.favpng.com/3/25/18/avatar-free-of-house-png-favpng-ktNPu2Ui49qDCvv1pVnBpQnmb.jpg";
   }
   try {
-    const result = await cloudinary.uploader.upload(req.file?.path);
-    const savedProperty = await client.query(
-      "INSERT INTO properties (owner, type, state, city, address, price, image_url) VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *",
-      [
-        `${user.id}`,
-        `${property.type}`,
-        `${property.state}`,
-        `${property.city}`,
-        `${property.address}`,
-        `${property.price}`,
-        `${result.secure_url}`,
-      ]
+    const result = await cloudinary.uploader.upload(
+      req.file?.path || property.image_url
     );
+
+    const statement = insertValue({ owner: "", ...req.body }, "properties");
+    console.log(statement);
+    const savedProperty = await client.query(statement, [
+      `${user.id}`,
+      `${property.type}`,
+      `${property.state}`,
+      `${property.city}`,
+      `${property.address}`,
+      `${property.price}`,
+      `${result.secure_url}`,
+    ]);
 
     const output = {
       status: "successful",
       data: savedProperty.rows[0],
     };
-    res.status(201).send(output);
+    return res.status(201).send(output);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
 
 /**
  * PATCH Update a property
  */
-export const updateProperty = async (req: Request, res: Response) => {
+export const updateProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const property: any = req.body;
   const ID = req.params.id;
   const user = req.user;
@@ -88,12 +97,15 @@ export const updateProperty = async (req: Request, res: Response) => {
       status: "successful",
       data: newProperty.rows[0],
     };
-    res.status(201).send(result);
+    return res.status(201).send(result);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
-export const soldProperty = async (req: Request, res: Response) => {
+export const soldProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const id = req.params.id;
   const user = req.user;
   const owner = user.id;
@@ -109,14 +121,16 @@ export const soldProperty = async (req: Request, res: Response) => {
       status: "successful",
       data: updatedProperty.rows[0],
     };
-    res.status(201).send(output);
-    console.log("sold property");
+    return res.status(201).send(output);
   } catch (error) {
-    res.status(500).send(error);
+    return res.status(500).send(error);
   }
 };
 
-export const removeProperty = async (req: Request, res: Response) => {
+export const removeProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const id = req.params.id;
   const user = req.user;
   const owner = user.id;
@@ -135,7 +149,10 @@ export const removeProperty = async (req: Request, res: Response) => {
   }
 };
 
-export const getAllProperty = async (req: Request, res: Response) => {
+export const getAllProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const statement = `SELECT * FROM properties`;
   try {
     const properies = await client.query(`${statement}`);
@@ -148,7 +165,10 @@ export const getAllProperty = async (req: Request, res: Response) => {
     res.status(500).send(error);
   }
 };
-export const getParticularProperty = async (req: Request, res: Response) => {
+export const getParticularProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const type = req.query.type;
   const statement = `SELECT * FROM properties WHERE type = $1`;
   try {
@@ -163,7 +183,10 @@ export const getParticularProperty = async (req: Request, res: Response) => {
   }
 };
 
-export const getSpecificProperty = async (req: Request, res: Response) => {
+export const getSpecificProperty = async (
+  req: Request,
+  res: Response
+): Promise<Response | void> => {
   const id = req.params.id;
   const statement = `SELECT * FROM properties WHERE id =$1`;
   try {
@@ -177,4 +200,3 @@ export const getSpecificProperty = async (req: Request, res: Response) => {
     res.status(500).send(error);
   }
 };
-// `UPDATE properties SET city = $1, price = $2 WHERE id = $3;`

@@ -6,12 +6,14 @@ import logger from "morgan";
 import client from "./db";
 import propertyRouter from "./routes/property";
 import usersRouter from "./routes/users";
+import { userQuery } from "./schema/tables";
 
 const app = express();
 client
   .connect()
-  .then(() => {
+  .then(async () => {
     console.log("DB Connected");
+    await client.query(userQuery);
   })
   .catch(() => console.log("DB not connected"));
 
