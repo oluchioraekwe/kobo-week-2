@@ -1,79 +1,78 @@
 import { Request, Response } from "express";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import client from "../db";
-import { userQuery } from "../schema/tables";
+import { createUser, getAllUsers, getUserByEmail, getUserById } from "../Service/userservice";
+import { comparePasswords, hashPassword } from "../utils/password";
 dotenv.config();
 
-export interface User {
-  email: string;
-  first_name?: string;
-  last_name?: string;
-  password: string;
-  address?: string;
-  is_admin?: boolean;
-}
-const secreteKey = process.env.SECRET_KEY as string;
-/**
- * POST to create new user
- */
-export const createUser = async (req: Request, res: Response) => {
-  const user: User = req.body;
-  await client.query(userQuery);
-  const savedUser = await client.query(`SELECT * FROM users WHERE email = $1`, [
-    user.email,
-  ]);
-  if (savedUser.rows.length > 0) {
-    return res.status(409).send("User already exists");
-  }
-  const hashedPasedword = await bcrypt.hash(user.password, 10);
-  try {
-    await client.query(
-      "INSERT INTO users(email, first_name, last_name, password, address, is_admin) VALUES($1, $2, $3, $4, $5, $6)",
-      [
-        `${user.email}`,
-        `${user.first_name}`,
-        `${user.last_name}`,
-        `${hashedPasedword}`,
-        `${user.address}`,
-        `${user.is_admin}`,
-      ]
-    );
-    res.status(201).send("User Created");
-  } catch (error) {
-    res.status(500).send(error);
-  }
-};
+const secreteKey = process.env.SECRET_KEY as string
 
 /**
- * POST to login a user
+ * POST Register User
+ */
+export const registerUser = async(req: Request, res: Response)=>{
+    try {
+        const payload = req.body
+        payload.password = await hashPassword(payload.password)
+        const user = await createUser(payload)
+        return res.status(201).send(user)
+    } catch (error:any) {
+        return res.status(500).send({error: error.message})
+    }
+}
+
+export const findUsers = async(req: Request, res: Response)=>{
+    try {
+        const users = await getAllUsers()
+        if(users.length<1){
+            return res.status(404).send({message:"Users not found"})
+        }
+        return res.status(200).send(users)
+    } catch (error:any) {
+        return res.status(500).send({error: error.message})
+        
+    }
+}
+
+export const findOneUser = async(req: Request, res: Response)=>{
+    try {
+        const id = req.params.id
+        const users = await getUserById(+id)
+        if(!users){
+            return res.status(404).send({message:"User not found"})
+        }
+        return res.status(200).send(users)
+    } catch (error:any) {
+        return res.status(500).send({error: error.message})
+        
+    }
+}
+
+/**
+ * POST Login  user
  */
 export const loginUser = async (req: Request, res: Response) => {
-  const user: User = req.body;
+    const {password, email} = req.body
+    if(!password || !email){
+        return res.status(401).send('Incomplete Login Credentials')
+    }
   try {
-    const savedUser = await client.query(
-      `SELECT * FROM users WHERE email = $1`,
-      [user.email]
-    );
-    if (savedUser.rows.length === 0) {
-      return res.status(404).send("invalid username and password");
+    const savedUser = await getUserByEmail(email)
+    if(!savedUser){
+        return res.status(401).send('Invalid Login Credentials')
     }
-    const password = await bcrypt.compare(
-      user.password,
-      savedUser.rows[0].password
-    );
-    if (!password) {
-      return res.status(404).send("invalid username and password");
+
+    const checkPassword = await comparePasswords(password,savedUser.password)
+    if(!checkPassword){
+        return res.status(401).send('Invalid Login Credentials')
     }
-    const token = jwt.sign(
-      { email: savedUser.rows[0].email, id: savedUser.rows[0].id },
+     const token = jwt.sign(
+      { email: savedUser.email, id: savedUser.id, isAdmin: savedUser.isAdmin },
       secreteKey,
-      { expiresIn: "100m" }
+      { expiresIn: "100m" ,algorithm:'HS512'}
     );
-    const data = { token: token, ...savedUser.rows[0] };
-    const result = { status: "success", data: data };
-    res.status(200).send(result);
+    const result = { status: "success", data: {id: savedUser.id, token: token, } };
+    return res.status(200).send(result);
   } catch (error) {
     res.status(500).send(error);
   }

@@ -3,17 +3,13 @@ import express from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
-import client from "./db";
 import propertyRouter from "./routes/property";
 import usersRouter from "./routes/users";
+import dbConnect from "./db";
 
 const app = express();
-client
-  .connect()
-  .then(() => {
-    console.log("DB Connected");
-  })
-  .catch(() => console.log("DB not connected"));
+
+dbConnect()
 
 // view engine setup
 app.set("views", path.join(__dirname, "..", "views"));

@@ -35,3 +35,4 @@ export const flagQuery = `
   );
   `;
 //CREATE TYPE mood AS ENUM ('sold', 'available');
+

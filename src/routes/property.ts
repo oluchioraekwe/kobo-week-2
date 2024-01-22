@@ -1,27 +1,22 @@
 import { Router } from "express";
 import {
   createProperty,
+  getProperty,
   updateProperty,
-  soldProperty,
   removeProperty,
   getAllProperty,
-  getParticularProperty,
-  getSpecificProperty,
+  flagProperty,
 } from "../Controller/propertyController";
-import { authenticateJWT } from "../Middleware/authentiction";
+import { authenticateJWT, authorizedUser } from "../Middleware/authentiction";
 const upload = require("../utils/multerUpload");
 const router = Router();
 
-/* GET home page. */
-// router.get("/", function (req: Request, res: Response) {
-//   res.render("index", { title: "Express" });
-// });
-router.get("/", getAllProperty);
-router.get("/specific", getParticularProperty);
-router.get("/:id", getSpecificProperty);
+
+router.get("/",[authenticateJWT,authorizedUser] ,getAllProperty);
+router.get("/:id",authenticateJWT ,getProperty);
 router.post("/", authenticateJWT, upload.single("image_url"), createProperty);
+router.post("/flag/:id",[authenticateJWT,authorizedUser],flagProperty)
 router.patch("/update/:id", authenticateJWT, updateProperty);
-router.patch("/sold/:id", authenticateJWT, soldProperty);
 router.delete("/delete/:id", authenticateJWT, removeProperty);
 
 export default router;
